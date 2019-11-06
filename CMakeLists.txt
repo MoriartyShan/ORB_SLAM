@@ -16,8 +16,11 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 
 LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
 
-find_package(OpenCV REQUIRED)
-find_package(Eigen3 REQUIRED)
+find_package(OpenCV 3.2 EXACT REQUIRED)
+find_package(Eigen3 3.3.5 EXACT REQUIRED)
+find_package(glog REQUIRED)
+set(BOOST_ROOT "/usr/")
+find_package(Boost 1.65.1 EXACT REQUIRED COMPONENTS filesystem system thread)
 
 include_directories(
 ${PROJECT_SOURCE_DIR}
@@ -45,11 +48,13 @@ src/Sim3Solver.cc
 src/Initializer.cc
 )
 rosbuild_add_boost_directories()
-rosbuild_link_boost(${PROJECT_NAME} thread)
+rosbuild_link_boost(${PROJECT_NAME} thread system)
 
 target_link_libraries(${PROJECT_NAME}
 ${OpenCV_LIBS}
+${Boost_LIBS}
 ${EIGEN3_LIBS}
+glog::glog
 ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
 ${PROJECT_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
 )

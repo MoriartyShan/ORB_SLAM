@@ -26,7 +26,7 @@
 #include "ORBmatcher.h"
 
 #include<boost/thread.hpp>
-
+#include <glog/logging.h>
 namespace ORB_SLAM
 {
 
@@ -580,6 +580,9 @@ bool Initializer::ReconstructH(vector<bool> &vbMatchesInliers, cv::Mat &H21, cv:
     // International Journal of Pattern Recognition and Artificial Intelligence, 1988
 
     cv::Mat invK = K.inv();
+
+//    LOG(ERROR) <<
+
     cv::Mat A = invK*H21*K;
 
     cv::Mat U,w,Vt,V;

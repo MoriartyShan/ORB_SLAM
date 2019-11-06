@@ -34,8 +34,7 @@
 #include "LoopClosing.h"
 #include "KeyFrameDatabase.h"
 #include "ORBVocabulary.h"
-
-
+#include <glog/logging.h>
 #include "Converter.h"
 
 

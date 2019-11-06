@@ -21,8 +21,9 @@
 #include "Tracking.h"
 #include<ros/ros.h>
 #include <cv_bridge/cv_bridge.h>
-
-#include<opencv2/opencv.hpp>
+#include <glog/logging.h>
+#include <opencv2/opencv.hpp>
+#include <opencv2/imgcodecs.hpp>
 
 #include"ORBmatcher.h"
 #include"FramePublisher.h"
@@ -41,8 +42,6 @@ using namespace std;
 
 namespace ORB_SLAM
 {
-
-
 Tracking::Tracking(ORBVocabulary* pVoc, FramePublisher *pFramePublisher, MapPublisher *pMapPublisher, Map *pMap, string strSettingPath):
     mState(NO_IMAGES_YET), mpORBVocabulary(pVoc), mpFramePublisher(pFramePublisher), mpMapPublisher(pMapPublisher), mpMap(pMap),
     mnLastRelocFrameId(0), mbPublisherStopped(false), mbReseting(false), mbForceRelocalisation(false), mbMotionModel(false)
@@ -50,24 +49,14 @@ Tracking::Tracking(ORBVocabulary* pVoc, FramePublisher *pFramePublisher, MapPubl
     // Load camera parameters from settings file
 
     cv::FileStorage fSettings(strSettingPath, cv::FileStorage::READ);
-    float fx = fSettings["Camera.fx"];
-    float fy = fSettings["Camera.fy"];
-    float cx = fSettings["Camera.cx"];
-    float cy = fSettings["Camera.cy"];
 
-    cv::Mat K = cv::Mat::eye(3,3,CV_32F);
-    K.at<float>(0,0) = fx;
-    K.at<float>(1,1) = fy;
-    K.at<float>(0,2) = cx;
-    K.at<float>(1,2) = cy;
-    K.copyTo(mK);
+    cv::Mat K;
+    fSettings["cameraK"] >> K;
+    K.convertTo(mK, CV_32F);
 
-    cv::Mat DistCoef(4,1,CV_32F);
-    DistCoef.at<float>(0) = fSettings["Camera.k1"];
-    DistCoef.at<float>(1) = fSettings["Camera.k2"];
-    DistCoef.at<float>(2) = fSettings["Camera.p1"];
-    DistCoef.at<float>(3) = fSettings["Camera.p2"];
-    DistCoef.copyTo(mDistCoef);
+    cv::Mat DistCoef;
+    fSettings["dist_coeff"] >> DistCoef;
+    DistCoef.convertTo(mDistCoef, CV_32F);
 
     float fps = fSettings["Camera.fps"];
     if(fps==0)
@@ -78,52 +67,46 @@ Tracking::Tracking(ORBVocabulary* pVoc, FramePublisher *pFramePublisher, MapPubl
     mMaxFrames = 18*fps/30;
 
 
-    cout << "Camera Parameters: " << endl;
-    cout << "- fx: " << fx << endl;
-    cout << "- fy: " << fy << endl;
-    cout << "- cx: " << cx << endl;
-    cout << "- cy: " << cy << endl;
-    cout << "- k1: " << DistCoef.at<float>(0) << endl;
-    cout << "- k2: " << DistCoef.at<float>(1) << endl;
-    cout << "- p1: " << DistCoef.at<float>(2) << endl;
-    cout << "- p2: " << DistCoef.at<float>(3) << endl;
-    cout << "- fps: " << fps << endl;
+    LOG(ERROR) << "Camera Parameters: " << endl;
+    LOG(ERROR) << "CameraK:\n" << K;
+    LOG(ERROR) << "DistCoef:\n" << DistCoef;
+    LOG(ERROR) << "- fps: " << fps << endl;
 
 
     int nRGB = fSettings["Camera.RGB"];
     mbRGB = nRGB;
 
     if(mbRGB)
-        cout << "- color order: RGB (ignored if grayscale)" << endl;
+        LOG(ERROR) << "- color order: RGB (ignored if grayscale)" << endl;
     else
-        cout << "- color order: BGR (ignored if grayscale)" << endl;
+        LOG(ERROR) << "- color order: BGR (ignored if grayscale)" << endl;
 
     // Load ORB parameters
 
     int nFeatures = fSettings["ORBextractor.nFeatures"];
     float fScaleFactor = fSettings["ORBextractor.scaleFactor"];
     int nLevels = fSettings["ORBextractor.nLevels"];
-    int fastTh = fSettings["ORBextractor.fastTh"];    
+    int fastTh = fSettings["ORBextractor.fastTh"];
     int Score = fSettings["ORBextractor.nScoreType"];
 
     assert(Score==1 || Score==0);
 
     mpORBextractor = new ORBextractor(nFeatures,fScaleFactor,nLevels,Score,fastTh);
 
-    cout << endl  << "ORB Extractor Parameters: " << endl;
-    cout << "- Number of Features: " << nFeatures << endl;
-    cout << "- Scale Levels: " << nLevels << endl;
-    cout << "- Scale Factor: " << fScaleFactor << endl;
-    cout << "- Fast Threshold: " << fastTh << endl;
+    LOG(ERROR) << endl  << "ORB Extractor Parameters: " << endl;
+    LOG(ERROR) << "- Number of Features: " << nFeatures << endl;
+    LOG(ERROR) << "- Scale Levels: " << nLevels << endl;
+    LOG(ERROR) << "- Scale Factor: " << fScaleFactor << endl;
+    LOG(ERROR) << "- Fast Threshold: " << fastTh << endl;
     if(Score==0)
-        cout << "- Score: HARRIS" << endl;
+        LOG(ERROR) << "- Score: HARRIS" << endl;
     else
-        cout << "- Score: FAST" << endl;
+        LOG(ERROR) << "- Score: FAST" << endl;
 
 
     // ORB extractor for initialization
     // Initialization uses only points from the finest scale level
-    mpIniORBextractor = new ORBextractor(nFeatures*2,1.2,8,Score,fastTh);  
+    mpIniORBextractor = new ORBextractor(nFeatures*2,1.2,8,Score,fastTh);
 
     int nMotion = fSettings["UseMotionModel"];
     mbMotionModel = nMotion;
@@ -131,10 +114,10 @@ Tracking::Tracking(ORBVocabulary* pVoc, FramePublisher *pFramePublisher, MapPubl
     if(mbMotionModel)
     {
         mVelocity = cv::Mat::eye(4,4,CV_32F);
-        cout << endl << "Motion Model: Enabled" << endl << endl;
+        LOG(ERROR) << endl << "Motion Model: Enabled" << endl << endl;
     }
     else
-        cout << endl << "Motion Model: Disabled (not recommended, change settings UseMotionModel: 1)" << endl << endl;
+        LOG(ERROR) << endl << "Motion Model: Disabled (not recommended, change settings UseMotionModel: 1)" << endl << endl;
 
 
     tf::Transform tfT;
@@ -295,7 +278,7 @@ void Tracking::GrabImage(const sensor_msgs::ImageConstPtr& msg)
         }
 
         mLastFrame = Frame(mCurrentFrame);
-     }       
+     }
 
     // Update drawer
     mpFramePublisher->Update(this);
@@ -346,7 +329,7 @@ void Tracking::Initialize()
         fill(mvIniMatches.begin(),mvIniMatches.end(),-1);
         mState = NOT_INITIALIZED;
         return;
-    }    
+    }
 
     // Find correspondences
     ORBmatcher matcher(0.9,true);
@@ -357,7 +340,7 @@ void Tracking::Initialize()
     {
         mState = NOT_INITIALIZED;
         return;
-    }  
+    }
 
     cv::Mat Rcw; // Current Camera Rotation
     cv::Mat tcw; // Current Camera Translation
@@ -371,7 +354,7 @@ void Tracking::Initialize()
             {
                 mvIniMatches[i]=-1;
                 nmatches--;
-            }           
+            }
         }
 
         CreateInitialMap(Rcw,tcw);
@@ -704,14 +687,14 @@ void Tracking::SearchReferencePointsInFrustum()
         if(pMP->mnLastFrameSeen == mCurrentFrame.mnId)
             continue;
         if(pMP->isBad())
-            continue;        
+            continue;
         // Project (this fills MapPoint variables for matching)
         if(mCurrentFrame.isInFrustum(pMP,0.5))
         {
             pMP->IncreaseVisible();
             nToMatch++;
         }
-    }    
+    }
 
 
     if(nToMatch>0)
@@ -726,7 +709,7 @@ void Tracking::SearchReferencePointsInFrustum()
 }
 
 void Tracking::UpdateReference()
-{    
+{
     // This is for visualization
     mpMap->SetReferenceMapPoints(mvpLocalMapPoints);
 
@@ -897,7 +880,7 @@ bool Tracking::Relocalisation()
                 vpPnPsolvers[i] = pSolver;
                 nCandidates++;
             }
-        }        
+        }
     }
 
     // Alternatively perform some iterations of P4P RANSAC
@@ -989,7 +972,7 @@ bool Tracking::Relocalisation()
 
                 // If the pose is supported by enough inliers stop ransacs and continue
                 if(nGood>=50)
-                {                    
+                {
                     bMatch = true;
                     break;
                 }
