@@ -1,0 +1,11 @@
+build/
+cmake-build-*/
+.idea/
+bin/
+KeyFrameTrajectory.txt
+*.swp
+Thirdparty/g2o/lib/
+Thirdparty/DBoW2/lib/
+Data/*.bag
+Data/ORBvoc.txt
+Thirdparty/g2o/config.h
