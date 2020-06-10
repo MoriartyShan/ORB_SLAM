@@ -17,7 +17,7 @@
 * You should have received a copy of the GNU General Public License
 * along with ORB-SLAM. If not, see <http://www.gnu.org/licenses/>.
 */
-
+#include "common.h"
 #include "KeyFrame.h"
 #include "Converter.h"
 #include <ros/ros.h>
@@ -146,7 +146,7 @@ void KeyFrame::UpdateBestCovisibles()
     for(map<KeyFrame*,int>::iterator mit=mConnectedKeyFrameWeights.begin(), mend=mConnectedKeyFrameWeights.end(); mit!=mend; mit++)
        vPairs.push_back(make_pair(mit->second,mit->first));
 
-    sort(vPairs.begin(),vPairs.end());
+    SORT_FUNC(vPairs.begin(),vPairs.end());
     list<KeyFrame*> lKFs;
     list<int> lWs;
     for(size_t i=0, iend=vPairs.size(); i<iend;i++)
@@ -393,7 +393,7 @@ void KeyFrame::UpdateConnections()
         pKFmax->AddConnection(this,nmax);
     }
 
-    sort(vPairs.begin(),vPairs.end());
+    SORT_FUNC(vPairs.begin(),vPairs.end());
     list<KeyFrame*> lKFs;
     list<int> lWs;
     for(size_t i=0; i<vPairs.size();i++)
@@ -683,7 +683,7 @@ float KeyFrame::ComputeSceneMedianDepth(int q)
         }
     }
 
-    sort(vDepths.begin(),vDepths.end());
+    SORT_FUNC(vDepths.begin(),vDepths.end());
 
     return vDepths[(vDepths.size()-1)/q];
 }

@@ -17,7 +17,7 @@
 * You should have received a copy of the GNU General Public License
 * along with ORB-SLAM. If not, see <http://www.gnu.org/licenses/>.
 */
-
+#include "common.h"
 #include "Initializer.h"
 
 #include "Thirdparty/DBoW2/DUtils/Random.h"
@@ -893,7 +893,7 @@ int Initializer::CheckRT(const cv::Mat &R, const cv::Mat &t, const vector<cv::Ke
 
     if(nGood>0)
     {
-        sort(vCosParallax.begin(),vCosParallax.end());
+        SORT_FUNC(vCosParallax.begin(),vCosParallax.end());
 
         size_t idx = min(50,int(vCosParallax.size()-1));
         parallax = acos(vCosParallax[idx])*180/CV_PI;

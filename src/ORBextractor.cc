@@ -59,6 +59,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <vector>
 #include <opencv2/opencv.hpp>
+#include <glog/logging.h>
 #include "ORBextractor.h"
 
 #include <ros/ros.h>
@@ -518,18 +519,26 @@ static void computeOrientation(const Mat& image, vector<KeyPoint>& keypoints, co
         keypoint->angle = IC_Angle(image, keypoint->pt, umax);
     }
 }
-
+static int numbersssss=0;
 void ORBextractor::ComputeKeyPoints(vector<vector<KeyPoint> >& allKeypoints)
 {
 
     allKeypoints.resize(nlevels);
 
     float imageRatio = (float)mvImagePyramid[0].cols/mvImagePyramid[0].rows;
+  numbersssss++;
+    const float first_xrange[2] = {197, 621};
+    const float first_yrange[2] = {84, 129};
 
     for (int level = 0; level < nlevels; ++level)
     {
         const int nDesiredFeatures = mnFeaturesPerLevel[level];
-
+        const float ratio_scale[2] = {
+          mvImagePyramid[level].rows / (float)mvImagePyramid[0].rows,
+          mvImagePyramid[level].cols / (float)mvImagePyramid[0].cols
+        };
+        const float xrange[2] = {first_xrange[0] * ratio_scale[1], first_xrange[1] * ratio_scale[1]};
+        const float yrange[2] = {first_yrange[0] * ratio_scale[0], first_yrange[1] * ratio_scale[0]};
         const int levelCols = sqrt((float)nDesiredFeatures/(5*imageRatio));
         const int levelRows = imageRatio*levelCols;
 
@@ -556,7 +565,7 @@ void ORBextractor::ComputeKeyPoints(vector<vector<KeyPoint> >& allKeypoints)
         int nNoMore = 0;
         int nToDistribute = 0;
 
-
+        //cv::imwrite("./" + std::to_string(numbersssss) + "_" + std::to_string(level) + ".png", mvImagePyramid[level]);
         float hY = cellH + 6;
 
         for(int i=0; i<levelRows; i++)
@@ -595,9 +604,21 @@ void ORBextractor::ComputeKeyPoints(vector<vector<KeyPoint> >& allKeypoints)
                         continue;
                 }
 
+                if (iniX > xrange[1] || (iniX+hX) < xrange[0]) {
+
+                } else {
+//                  LOG(ERROR) << "skip [" << iniX << "," << iniX+hX << "]" << level << " " << mvImagePyramid[level].size();
+                  continue;
+                }
+                if (iniY > yrange[1] || (iniY + hY) < yrange[0]) {
+
+                } else {
+                //  LOG(ERROR) << "skip [" << iniY << "," << iniY + hY << "]"<< level << " " << mvImagePyramid[level].size();
+                  continue;
+                }
 
                 Mat cellImage = mvImagePyramid[level].rowRange(iniY,iniY+hY).colRange(iniX,iniX+hX);
-
+                //cv::imwrite("./" + std::to_string(numbersssss) + "_" + std::to_string(level) + "_" + std::to_string(iniY) + "_" + std::to_string(iniX) + ".png", cellImage);
                 Mat cellMask;
                 if(!mvMaskPyramid[level].empty())
                     cellMask = cv::Mat(mvMaskPyramid[level],Rect(iniX,iniY,hX,hY));

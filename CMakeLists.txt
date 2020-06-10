@@ -18,7 +18,7 @@ LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
 
 find_package(OpenCV REQUIRED)
 find_package(Eigen3 REQUIRED)
-
+find_package(glog REQUIRED)
 include_directories(
 ${PROJECT_SOURCE_DIR}
 ${EIGEN3_INCLUDE_DIR}
@@ -48,6 +48,7 @@ rosbuild_add_boost_directories()
 rosbuild_link_boost(${PROJECT_NAME} thread system)
 
 target_link_libraries(${PROJECT_NAME}
+glog::glog
 ${OpenCV_LIBS}
 ${EIGEN3_LIBS}
 ${PROJECT_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so

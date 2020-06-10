@@ -17,7 +17,7 @@
 * You should have received a copy of the GNU General Public License
 * along with ORB-SLAM. If not, see <http://www.gnu.org/licenses/>.
 */
-
+#include "common.h"
 #include<iostream>
 #include<fstream>
 #include<ros/ros.h>
@@ -161,7 +161,7 @@ int main(int argc, char **argv)
     ofstream f;
 
     vector<ORB_SLAM::KeyFrame*> vpKFs = World.GetAllKeyFrames();
-    sort(vpKFs.begin(),vpKFs.end(),ORB_SLAM::KeyFrame::lId);
+    SORT_FUNC(vpKFs.begin(),vpKFs.end(),ORB_SLAM::KeyFrame::lId);
 
     cout << endl << "Saving Keyframe Trajectory to KeyFrameTrajectory.txt" << endl;
     string strFile = ros::package::getPath("ORB_SLAM")+"/"+"KeyFrameTrajectory.txt";

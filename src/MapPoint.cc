@@ -17,7 +17,7 @@
 * You should have received a copy of the GNU General Public License
 * along with ORB-SLAM. If not, see <http://www.gnu.org/licenses/>.
 */
-
+#include "common.h"
 #include "MapPoint.h"
 #include "ORBmatcher.h"
 #include "ros/ros.h"
@@ -233,7 +233,7 @@ void MapPoint::ComputeDistinctiveDescriptors()
     for(size_t i=0;i<N;i++)
     {
         vector<int> vDists(Distances[i],Distances[i]+N);
-        sort(vDists.begin(),vDists.end());
+        SORT_FUNC(vDists.begin(),vDists.end());
         int median = vDists[0.5*(N-1)];
 
         if(median<BestMedian)

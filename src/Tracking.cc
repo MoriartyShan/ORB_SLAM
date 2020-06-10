@@ -35,8 +35,8 @@
 
 #include<iostream>
 #include<fstream>
-
-
+#include <glog/logging.h>
+#include <string>
 using namespace std;
 
 namespace ORB_SLAM
@@ -195,7 +195,7 @@ void Tracking::GrabImage(const sensor_msgs::ImageConstPtr& msg)
     {
         cv_ptr->image.copyTo(im);
     }
-
+    cv:imwrite("./output/" + std::to_string(cv_ptr->header.stamp.toSec()) + ".png",im);
     if(mState==WORKING || mState==LOST)
         mCurrentFrame = Frame(im,cv_ptr->header.stamp.toSec(),mpORBextractor,mpORBVocabulary,mK,mDistCoef);
     else
@@ -263,11 +263,14 @@ void Tracking::GrabImage(const sensor_msgs::ImageConstPtr& msg)
             }
         }
 
-        if(bOK)
-            mState = WORKING;
-        else
-            mState=LOST;
-
+        if (mState == WORKING && !bOK) {
+          LOG(ERROR) << "state change to lost:" << cv_ptr->header.stamp;
+        }
+        if(bOK) {
+          mState = WORKING;
+        } else {
+          mState = LOST;
+        }
         // Reset if the camera get lost soon after initialization
         if(mState==LOST)
         {

@@ -20,7 +20,7 @@
 */
 
 #include "ORBmatcher.h"
-
+#include "common.h"
 #include<limits.h>
 
 #include<ros/ros.h>
@@ -924,7 +924,7 @@ vector<cv::KeyPoint> &vMatchedKeys1, vector<cv::KeyPoint> &vMatchedKeys2, vector
                 if(vDistIndex.empty())
                     continue;
 
-                sort(vDistIndex.begin(),vDistIndex.end());
+                SORT_FUNC(vDistIndex.begin(),vDistIndex.end());
                 int BestDist = vDistIndex.front().first;
                 int DistTh = round(2*BestDist);
 
