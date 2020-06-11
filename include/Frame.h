@@ -117,6 +117,11 @@ public:
     vector<float> mvLevelSigma2;
     vector<float> mvInvLevelSigma2;
 
+    cv::Mat DrawKeyPoints() const;
+    int64_t MiliTimestamp() const {
+      return int64_t(mTimeStamp * 1000);
+    };
+
     // Undistorted Image Bounds (computed once)
     static int mnMinX;
     static int mnMaxX;

@@ -30,7 +30,7 @@
 #include "Thirdparty/DBoW2/DBoW2/FeatureVector.h"
 
 #include<stdint-gcc.h>
-
+#include <glog/logging.h>
 
 using namespace std;
 
@@ -1595,6 +1595,7 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
     }  
 
    //Apply rotation consistency
+   LOG(INFO) << "before rotation check : " << nmatches;
    if(mbCheckOrientation)
    {
        int ind1=-1;
@@ -1615,7 +1616,7 @@ int ORBmatcher::SearchByProjection(Frame &CurrentFrame, const Frame &LastFrame, 
            }
        }
    }
-
+   LOG(INFO) << "after rotation check : " << nmatches;
    return nmatches;
 }
 

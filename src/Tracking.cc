@@ -195,7 +195,7 @@ void Tracking::GrabImage(const sensor_msgs::ImageConstPtr& msg)
     {
         cv_ptr->image.copyTo(im);
     }
-    cv:imwrite("./output/" + std::to_string(cv_ptr->header.stamp.toSec()) + ".png",im);
+    cv::imwrite("./output/" + std::to_string(cv_ptr->header.stamp.toSec()) + ".png",im);
     if(mState==WORKING || mState==LOST)
         mCurrentFrame = Frame(im,cv_ptr->header.stamp.toSec(),mpORBextractor,mpORBVocabulary,mK,mDistCoef);
     else
@@ -264,7 +264,7 @@ void Tracking::GrabImage(const sensor_msgs::ImageConstPtr& msg)
         }
 
         if (mState == WORKING && !bOK) {
-          LOG(ERROR) << "state change to lost:" << cv_ptr->header.stamp;
+          LOG(ERROR) << "state change to lost:" << cv_ptr->header.stamp << "-" << mCurrentFrame.MiliTimestamp();
         }
         if(bOK) {
           mState = WORKING;
@@ -298,7 +298,10 @@ void Tracking::GrabImage(const sensor_msgs::ImageConstPtr& msg)
         }
 
         mLastFrame = Frame(mCurrentFrame);
-     }       
+    }
+    std::string imgpath = "/home/moriarty/output/" + std::to_string(mCurrentFrame.MiliTimestamp()) + ".png";
+    cv::imwrite(imgpath,
+        mCurrentFrame.DrawKeyPoints());
 
     // Update drawer
     mpFramePublisher->Update(this);
@@ -490,7 +493,7 @@ bool Tracking::TrackPreviousFrame()
 {
     ORBmatcher matcher(0.9,true);
     vector<MapPoint*> vpMapPointMatches;
-
+    LOG(INFO) << "in TrackPreviousFrame [" << mCurrentFrame.MiliTimestamp() << "]";
     // Search first points at coarse scale levels to get a rough initial estimate
     int minOctave = 0;
     int maxOctave = mCurrentFrame.mvScaleFactors.size()-1;
@@ -498,11 +501,13 @@ bool Tracking::TrackPreviousFrame()
         minOctave = maxOctave/2+1;
 
     int nmatches = matcher.WindowSearch(mLastFrame,mCurrentFrame,200,vpMapPointMatches,minOctave);
-
+    LOG(INFO) << "match window first time : " << nmatches;
     // If not enough matches, search again without scale constraint
     if(nmatches<10)
     {
+        //why window size is even smaller than before?
         nmatches = matcher.WindowSearch(mLastFrame,mCurrentFrame,100,vpMapPointMatches,0);
+        LOG(INFO) << "match window seconde time : " << nmatches;
         if(nmatches<10)
         {
             vpMapPointMatches=vector<MapPoint*>(mCurrentFrame.mvpMapPoints.size(),static_cast<MapPoint*>(NULL));
@@ -530,9 +535,11 @@ bool Tracking::TrackPreviousFrame()
         // Search by projection with the estimated pose
         nmatches += matcher.SearchByProjection(mLastFrame,mCurrentFrame,15,vpMapPointMatches);
     }
-    else //Last opportunity
-        nmatches = matcher.SearchByProjection(mLastFrame,mCurrentFrame,50,vpMapPointMatches);
-
+    else {//Last opportunity
+      nmatches = matcher.SearchByProjection(mLastFrame, mCurrentFrame, 50,
+                                            vpMapPointMatches);
+      LOG(INFO) << "match window third time : " << nmatches;
+    }
 
     mCurrentFrame.mvpMapPoints=vpMapPointMatches;
 
@@ -550,7 +557,7 @@ bool Tracking::TrackPreviousFrame()
             mCurrentFrame.mvbOutlier[i]=false;
             nmatches--;
         }
-
+    LOG(INFO) << "match window finally : " << nmatches;
     return nmatches>=10;
 }
 
@@ -558,15 +565,16 @@ bool Tracking::TrackWithMotionModel()
 {
     ORBmatcher matcher(0.9,true);
     vector<MapPoint*> vpMapPointMatches;
-
+    LOG(INFO) << "In TrackWithMotionModel: frame " << mCurrentFrame.MiliTimestamp();
     // Compute current pose by motion model
     mCurrentFrame.mTcw = mVelocity*mLastFrame.mTcw;
 
-    fill(mCurrentFrame.mvpMapPoints.begin(),mCurrentFrame.mvpMapPoints.end(),static_cast<MapPoint*>(NULL));
+    fill(mCurrentFrame.mvpMapPoints.begin(),mCurrentFrame.mvpMapPoints.end(),
+        static_cast<MapPoint*>(NULL));
 
     // Project points seen in previous frame
     int nmatches = matcher.SearchByProjection(mCurrentFrame,mLastFrame,15);
-
+    LOG(INFO) << "number of match after first match = " << nmatches;
     if(nmatches<20)
        return false;
 
@@ -586,7 +594,7 @@ bool Tracking::TrackWithMotionModel()
             }
         }
     }
-
+    LOG(INFO) << "number of match after TrackWithMotionModel = " << nmatches;
     return nmatches>=10;
 }
 
@@ -595,7 +603,7 @@ bool Tracking::TrackLocalMap()
     // Tracking from previous frame or relocalisation was succesfull and we have an estimation
     // of the camera pose and some map points tracked in the frame.
     // Update Local Map and Track
-
+    LOG(INFO) << "in TrackLocalMap[" << mCurrentFrame.MiliTimestamp() << "]";
     // Update Local Map
     UpdateReference();
 
@@ -615,6 +623,9 @@ bool Tracking::TrackLocalMap()
 
     // Decide if the tracking was succesful
     // More restrictive if there was a relocalization recently
+    LOG(INFO) << "judge [" << mCurrentFrame.mnId << ","
+              << mnLastRelocFrameId << "," << mMaxFrames
+              << "," << mnMatchesInliers << "]";
     if(mCurrentFrame.mnId<mnLastRelocFrameId+mMaxFrames && mnMatchesInliers<50)
         return false;
 

@@ -127,6 +127,21 @@ Frame::Frame(cv::Mat &im_, const double &timeStamp, ORBextractor* extractor, ORB
 
 }
 
+cv::Mat Frame::DrawKeyPoints() const {
+  cv::Mat image;
+  cv::cvtColor(im, image, cv::COLOR_GRAY2RGB);
+  for (int i = 0; i < mvKeys.size(); i++) {
+    if (mvpMapPoints[i] == nullptr) {
+      cv::circle(image, mvKeys[i].pt, 4, CV_RGB(0, 0, 255), 2);
+    } else {
+      cv::circle(image, mvKeys[i].pt, 6, CV_RGB(255, 0, 0), 2);
+    }
+  }
+
+
+  return image;
+}
+
 void Frame::UpdatePoseMatrices()
 { 
     mRcw = mTcw.rowRange(0,3).colRange(0,3);

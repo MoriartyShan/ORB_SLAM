@@ -38,12 +38,14 @@
 
 #include "Converter.h"
 
+#include <glog/logging.h>
 
 using namespace std;
 
 
 int main(int argc, char **argv)
 {
+    google::InitGoogleLogging(argv[0]);
     ros::init(argc, argv, "ORB_SLAM");
     ros::start();
 
